@@ -89,6 +89,9 @@ The dashboard includes several key sections:
 2. **Predictor Gauge:** An animated gauge showing your % chance of being placed.
 3. **Market Comparison:** Side-by-side animated analysis of Country-wise salary vs. CGPA correlation.
 
+![Uploading Screenshot 2026-03-08 at 11.42.04 AM.png…]()
+
+
 ---
 
 ## 🤝 Contributing
