@@ -3,6 +3,9 @@
 A 10-year silver price (XAG/USD) analytics project featuring interactive
 dashboard themes built with vanilla HTML, CSS, and Chart.js.
 
+<img width="1710" height="986" alt="Screenshot 2026-03-14 at 12 57 51 AM" src="https://github.com/user-attachments/assets/cef5fe85-1c9a-4cf1-bdf6-b2bbd5421803" />
+
+
 ---
 
 ## 📁 FOLDER STRUCTURE
