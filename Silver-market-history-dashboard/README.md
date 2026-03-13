@@ -1,6 +1,6 @@
-# ⚡ SILVER EDGERUNNERS — MARKET ANALYTICS PROJECT
+# ⚡ SILVER MOON — MARKET ANALYTICS PROJECT
 
-A 10-year silver price (XAG/USD) analytics project featuring three interactive
+A 10-year silver price (XAG/USD) analytics project featuring interactive
 dashboard themes built with vanilla HTML, CSS, and Chart.js.
 
 ---
@@ -12,8 +12,6 @@ SILVER_EDGERUNNERS_PROJECT/
 │
 ├── dashboards/
 │   ├── 01_pink_anime_dashboard.html     ← Kawaii pink anime theme (✨ Silver Moon)
-│   ├── 02_cyberpunk_dashboard.html      ← Dark cyberpunk / Night City theme
-│   └── 03_edgerunners_dashboard.html    ← Cyberpunk Edgerunners (yellow + magenta)
 │
 ├── dataset/
 │   └── silver_prices_10y.csv            ← Raw silver price data (2016–2026)
@@ -71,16 +69,6 @@ No server, no installation needed. The dataset is embedded directly in each file
 ### 01 — Pink Anime (Silver Moon ✨)
 Soft kawaii aesthetic with floating sparkles, pastel pinks and lavenders,
 Pacifico + Quicksand fonts, animated card reveals.
-
-### 02 — Cyberpunk (Night City)
-Dark terminal aesthetic with red neon `#FF003C`, scanlines, CRT scan beam,
-glitch animations, Bebas Neue + Share Tech Mono fonts.
-
-### 03 — Edgerunners (Reference Match)
-Directly matched to the Cyberpunk Edgerunners anime artwork:
-electric yellow `#FFE600` + hot magenta `#FF2D78`, Black Han Sans title font,
-custom crosshair cursor with ring, animated iris loader, yellow border treatment.
-
 ---
 
 ## 📈 CHARTS INCLUDED (all 3 dashboards)
@@ -106,5 +94,3 @@ custom crosshair cursor with ring, animated iris loader, yellow border treatment
 - Data embedded as JSON inside each HTML file
 
 ---
-
-*Built with Claude Sonnet · Night City Exchange · v2.077*
