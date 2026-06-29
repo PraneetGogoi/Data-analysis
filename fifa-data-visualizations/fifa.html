@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FIFA WC 2026 — Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;--s1:#0c0c0c;--s2:#111;--s3:#171717;
+  --line:#1a1a1a;--line2:#222;--line3:#2c2c2c;
+  --text:#efefef;--sub:#6a6a6a;--dim:#2e2e2e;
+  --accent:#d4ff00;--a2:rgba(212,255,0,.1);--a3:rgba(212,255,0,.04);
+  --glow:rgba(212,255,0,.25);
+  --green:#3ddc84;--red:#ff4747;--blue:#5b9cf6;--orange:#ff8c42;--purple:#a78bfa;
+  --yellow:rgba(252,207,0,.85);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:.018;pointer-events:none;z-index:0}
+canvas{display:block}
+button{cursor:pointer;font-family:inherit}
+svg{overflow:visible}
+
+.shell{display:grid;grid-template-columns:214px 1fr;min-height:100vh;position:relative;z-index:1}
+
+/* ─── SIDEBAR ─── */
+.sidebar{background:var(--s1);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-top{padding:22px 18px 18px;border-bottom:1px solid var(--line)}
+.live-dot{display:inline-flex;align-items:center;gap:5px;margin-bottom:10px}
+.live-dot-inner{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;box-shadow:0 0 8px var(--glow)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.live-label{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.sb-title{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1.05}
+.sb-title em{color:var(--accent);font-style:normal}
+.sb-desc{font-size:9px;color:var(--dim);margin-top:4px;letter-spacing:.04em}
+.sb-nav{padding:12px 8px;flex:1}
+.nav-grp{margin-bottom:16px}
+.nav-grp-label{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);padding:0 10px;margin-bottom:4px}
+.nb{display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;border:none;background:none;color:var(--sub);font-size:11.5px;text-align:left;transition:color .1s,background .1s;position:relative;letter-spacing:.01em;border-radius:2px}
+.nb:hover{color:var(--text);background:rgba(255,255,255,.025)}
+.nb.active{color:var(--accent);background:var(--a2)}
+.nb.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:12px;background:var(--accent);box-shadow:0 0 6px var(--glow)}
+.ni{width:12px;height:12px;opacity:.35;flex-shrink:0;transition:opacity .1s}
+.nb.active .ni,.nb:hover .ni{opacity:.75}
+.nb-badge{margin-left:auto;font-size:8px;background:var(--a2);color:var(--accent);padding:2px 6px;letter-spacing:.06em;font-weight:600}
+
+.sb-foot{padding:12px 14px;border-top:1px solid var(--line)}
+.sb-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sb-cell{background:var(--s2);padding:8px 10px;border:1px solid var(--line)}
+.sb-cell-n{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.02em;line-height:1}
+.sb-cell-l{font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+
+/* ─── MAIN ─── */
+.main{display:flex;flex-direction:column;min-height:100vh;overflow:hidden}
+.topbar{background:var(--s1);border-bottom:1px solid var(--line);height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20;flex-shrink:0}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,var(--accent),transparent 40%);opacity:.3}
+.tb-left{display:flex;align-items:center;gap:10px}
+.tb-title{font-size:10px;font-weight:600;color:var(--text);letter-spacing:.1em;text-transform:uppercase}
+.tb-sep{color:var(--dim)}
+.tb-sub{font-size:10px;color:var(--sub)}
+.tb-pills{display:flex;gap:2px}
+.pill{padding:4px 11px;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line2);color:var(--sub);cursor:pointer;transition:all .1s;background:none;font-family:inherit}
+.pill:hover{border-color:var(--sub);color:var(--text)}
+.pill.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700}
+
+/* ─── CONTENT ─── */
+.content{padding:28px;flex:1}
+.pg{display:none}.pg.active{display:block;animation:pgIn .18s ease}
+@keyframes pgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── SECTION HEADER ─── */
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:16px;margin-top:28px}
+.sh:first-child{margin-top:0}
+.sh-l{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--sub);white-space:nowrap}
+.sh-r{flex:1;height:1px;background:var(--line)}
+.sh-m{font-size:8px;color:var(--dim);white-space:nowrap}
+
+/* ─── HERO TICKET ─── */
+.ticket{display:grid;grid-template-columns:1fr 240px;border:1px solid var(--line2);margin-bottom:24px;background:var(--s1);position:relative;overflow:hidden}
+.ticket::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--accent),rgba(212,255,0,.3) 50%,transparent)}
+.ticket::after{content:'FIFA · WC 2026 · USA · CAN · MEX';position:absolute;bottom:12px;left:36px;font-size:7.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+.tk-body{padding:28px 36px 40px}
+.tk-eye{font-size:7.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.tk-eye::before{content:'';width:18px;height:1px;background:var(--accent)}
+.tk-title{font-family:'Syne',sans-serif;font-size:70px;font-weight:800;line-height:.82;letter-spacing:-.05em;color:var(--text);margin-bottom:24px}
+.tk-title em{color:var(--accent);font-style:normal}
+.tk-nums{display:flex;gap:24px;flex-wrap:wrap}
+.tk-num-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:2px}
+.tk-num-val.ac{color:var(--accent)}
+.tk-num-l{font-size:7.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--dim)}
+.tk-stub{background:var(--s2);padding:20px 18px;border-left:2px dashed var(--line3);display:flex;flex-direction:column}
+.stub-item{padding:10px 0;border-bottom:1px solid var(--line)}
+.stub-item:last-of-type{border-bottom:none}
+.stub-l{font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.stub-v{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1.1}
+.stub-v.ac{color:var(--accent)}
+.barcode{display:flex;gap:2px;align-items:flex-end;height:26px;margin-top:12px}
+.bc-bar{background:var(--line3)}
+
+/* ─── STAT STRIP ─── */
+.strips{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:24px}
+.strip{background:var(--s1);padding:14px 12px;transition:background .1s;cursor:default;position:relative;overflow:hidden}
+.strip:hover{background:var(--s2)}
+.strip::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--accent);transform:scaleX(0);transition:transform .2s;transform-origin:left}
+.strip:hover::after{transform:scaleX(1)}
+.strip-n{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:3px;color:var(--text)}
+.strip-n.ac{color:var(--accent)}.strip-n.rd{color:var(--red)}.strip-n.gr{color:var(--green)}.strip-n.bl{color:var(--blue)}
+.strip-l{font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
+.strip-delta{font-size:9px;color:var(--green);margin-top:2px}
+
+/* ─── GRIDS ─── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.g23{display:grid;grid-template-columns:2fr 3fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.g13{display:grid;grid-template-columns:1fr 3fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.panel{background:var(--s1);padding:18px}
+.pl{font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);margin-bottom:12px}
+
+/* ─── SCORER ROWS ─── */
+.sr{display:grid;grid-template-columns:20px 1fr 90px 46px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.sr:last-child{border:none}
+.sr-n{font-size:9px;color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+.sr-name{font-size:12.5px;font-weight:500;color:var(--text);line-height:1.2}
+.sr-nat{font-size:9px;color:var(--sub);margin-top:1px}
+.sr-bar{height:1px;background:var(--line2);position:relative}
+.sr-fill{position:absolute;left:0;top:0;height:1px}
+.sr-val{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.02em;text-align:right}
+
+/* ─── BAR ROWS ─── */
+.br{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.br:last-child{border:none}
+.br-l{font-size:10px;color:var(--sub);width:84px;flex-shrink:0;text-align:right}
+.br-t{flex:1;height:1px;background:var(--line2);position:relative}
+.br-f{position:absolute;left:0;top:0;height:1px}
+.br-v{font-size:10px;font-variant-numeric:tabular-nums;color:var(--text);width:38px;text-align:right;flex-shrink:0}
+
+/* ─── OUTCOME BARS ─── */
+.ob{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ob:last-child{border:none}
+.ob-l{width:54px;font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:var(--dim)}
+.ob-t{flex:1;height:3px;background:var(--line2)}
+.ob-f{height:3px;transition:width .6s ease}
+.ob-v{width:28px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+
+/* ─── TEAM TABLE ─── */
+.t-hdr,.t-row{display:grid;grid-template-columns:16px 1fr 30px 30px 30px 30px 30px 44px 60px;align-items:center;padding:8px 0}
+.t-hdr{padding-bottom:6px;border-bottom:1px solid var(--line2)}
+.t-hdr div{font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:center}
+.t-hdr div:nth-child(1),.t-hdr div:nth-child(2){text-align:left}
+.t-hdr div:nth-child(2){padding-left:7px}
+.t-row{border-bottom:1px solid var(--line);transition:background .1s;cursor:default}
+.t-row:hover{background:rgba(255,255,255,.02)}
+.t-row:last-child{border:none}
+.t-row div{font-size:11px;color:var(--sub);text-align:center;font-variant-numeric:tabular-nums}
+.t-pos{font-size:9px;color:var(--dim);text-align:left!important}
+.t-name{font-size:11.5px;font-weight:500;color:var(--text);text-align:left!important;padding-left:7px}
+.t-pts{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--text);text-align:right!important}
+.t-form{display:flex;gap:2px;justify-content:flex-end;align-items:center}
+.form-dot{width:7px;height:7px;border-radius:50%}
+.sort-btn{background:none;border:none;font:inherit;color:inherit;cursor:pointer;padding:0;transition:color .1s}
+.sort-btn:hover{color:var(--text)}
+.sort-btn.asc::after{content:' ↑';color:var(--accent)}
+.sort-btn.desc::after{content:' ↓';color:var(--accent)}
+
+/* ─── PLAYER CARDS ─── */
+.pcg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.pc{background:var(--s1);padding:15px;display:flex;flex-direction:column;transition:background .1s;cursor:default}
+.pc:hover{background:var(--s2)}
+.pc-r{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:var(--accent);letter-spacing:-.04em;line-height:1;margin-bottom:7px;text-shadow:0 0 20px rgba(212,255,0,.2)}
+.pc-n{font-size:11.5px;font-weight:500;color:var(--text);margin-bottom:1px;line-height:1.3}
+.pc-nat{font-size:9px;color:var(--sub)}
+.pc-pos{display:inline-block;font-size:7px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--line2);color:var(--dim);margin-top:6px}
+.pc-bar{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.pc-bar-lbl{display:flex;justify-content:space-between;font-size:8px;color:var(--dim);margin-bottom:4px}
+.pc-bar-t{height:1px;background:var(--line2);position:relative}
+.pc-bar-f{position:absolute;left:0;top:0;height:1px;background:var(--accent)}
+
+/* ─── DONUT LEGEND ─── */
+.dl{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--line);font-size:10px}
+.dl:last-child{border:none}
+.dl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dl-l{color:var(--sub);flex:1}
+.dl-v{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+
+/* ─── FUNNEL ─── */
+.funnel-row{margin-bottom:12px}
+.funnel-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);margin-bottom:5px;display:flex;justify-content:space-between}
+.funnel-bar{height:32px;display:flex;align-items:center;padding:0 12px;position:relative;overflow:hidden;min-width:56px}
+.funnel-count{font-size:11px;font-weight:600;position:relative;z-index:1;white-space:nowrap}
+
+/* ─── STAGE BARS ─── */
+.stb{display:grid;grid-template-columns:104px 1fr 50px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.stb:last-child{border:none}
+.stb-l{font-size:9.5px;color:var(--sub);text-align:right}
+.stb-t{height:2px;background:var(--line2);position:relative}
+.stb-f{position:absolute;left:0;top:0;height:2px}
+.stb-v{font-size:9.5px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ─── ANNOTATION ─── */
+.ann{background:var(--a2);border-left:2px solid var(--accent);padding:8px 12px;font-size:10px;color:var(--sub);line-height:1.6;margin-top:10px}
+.ann strong{color:var(--accent);font-weight:600}
+
+/* ─── FOOT BAR ─── */
+.fbar{height:5px;overflow:hidden;display:flex;gap:1px;margin-top:7px}
+
+/* ─── INLINE LEGEND ─── */
+.ileg{display:flex;gap:12px;flex-wrap:wrap}
+.ileg-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--sub)}
+.ileg-dot{width:7px;height:7px;flex-shrink:0}
+
+/* ─── CW ─── */
+.cw{position:relative;width:100%}
+
+/* ─── COMPARISON BARS ─── */
+.cmp-row{display:flex;align-items:center;gap:0;padding:7px 0;border-bottom:1px solid var(--line)}
+.cmp-row:last-child{border:none}
+.cmp-label{width:72px;font-size:10px;color:var(--sub);flex-shrink:0}
+.cmp-bars{flex:1;display:flex;flex-direction:column;gap:3px}
+.cmp-bar{height:3px}
+.cmp-nums{width:68px;font-size:9px;color:var(--dim);text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+
+/* ─── HEATMAP ─── */
+.hm-grid{display:grid;gap:2px}
+.hm-cell{border-radius:1px;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:600;cursor:default;transition:all .15s;position:relative}
+.hm-cell:hover{transform:scale(1.08);z-index:2;box-shadow:0 0 12px rgba(0,0,0,.5)}
+.hm-cell .hm-tip{display:none;position:absolute;bottom:calc(100%+4px);left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--line2);padding:4px 8px;font-size:9px;white-space:nowrap;z-index:10;pointer-events:none}
+.hm-cell:hover .hm-tip{display:block}
+
+/* ─── COMPARE PAGE ─── */
+.compare-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:0;background:var(--line);border:1px solid var(--line);margin-bottom:18px}
+.compare-panel{background:var(--s1);padding:18px}
+.compare-vs{background:var(--bg);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--dim);padding:0 16px;letter-spacing:-.02em}
+.team-select{background:var(--s2);border:1px solid var(--line2);color:var(--text);font-family:'Inter',sans-serif;font-size:12px;padding:6px 10px;width:100%;cursor:pointer;margin-bottom:14px;-webkit-appearance:none}
+.team-select:focus{outline:none;border-color:var(--accent)}
+.compare-stat-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.compare-stat-row:last-child{border:none}
+.csr-val-l{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);width:44px;text-align:right;flex-shrink:0}
+.csr-val-r{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);width:44px;text-align:left;flex-shrink:0}
+.csr-track{flex:1;height:3px;background:var(--line2);display:flex;position:relative}
+.csr-label{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);position:absolute;top:6px;left:50%;transform:translateX(-50%);white-space:nowrap}
+.csr-fill-l{height:3px;margin-left:auto}
+.csr-fill-r{height:3px}
+.winner{color:var(--accent)!important}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--line3)}
+
+/* ─── FOOTER ─── */
+.pfoot{border-top:1px solid var(--line);padding-top:14px;display:flex;justify-content:space-between;margin-top:12px}
+.pfoot span{font-size:8px;color:var(--dim);letter-spacing:.07em}
+
+/* ─── PITCH SVG ─── */
+.pitch-wrap{background:#0a1a0a;border:1px solid #1a2a1a;position:relative;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="live-dot"><div class="live-dot-inner"></div><span class="live-label">54,600 records</span></div>
+    <div class="sb-title">WC <em>2026</em></div>
+    <div class="sb-desc">FIFA World Cup Analytics</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-grp">
+      <div class="nav-grp-label">Overview</div>
+      <button class="nb active" onclick="goPage('overview',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="5" height="5"/><rect x="8" y="1" width="5" height="5"/><rect x="1" y="8" width="5" height="5"/><rect x="8" y="8" width="5" height="5"/></svg>Dashboard
+      </button>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-label">Competition</div>
+      <button class="nb" onclick="goPage('scorers',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="4.5" r="2.5"/><path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>Top scorers
+      </button>
+      <button class="nb" onclick="goPage('teams',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 10l3-4 3 3 3-5 3 2"/></svg>Standings<span class="nb-badge">Sort</span>
+      </button>
+      <button class="nb" onclick="goPage('compare',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 7h12M7 1v12"/></svg>Compare teams<span class="nb-badge">New</span>
+      </button>
+      <button class="nb" onclick="goPage('discipline',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="1" width="8" height="12"/><path d="M5 5h4M5 8h2"/></svg>Discipline
+      </button>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-label">Players</div>
+      <button class="nb" onclick="goPage('ratings',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 1l1.5 3.5L12 5l-2.5 2.5.5 3.5L7 9.5 4 11l.5-3.5L2 5l3.5-.5z"/></svg>Player ratings
+      </button>
+      <button class="nb" onclick="goPage('physical',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.5"/><path d="M4 7h6M7 4v6"/></svg>Physical
+      </button>
+    </div>
+    <div class="nav-grp">
+      <div class="nav-grp-label">Analytics</div>
+      <button class="nb" onclick="goPage('shots',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.5"/><circle cx="7" cy="7" r="2"/></svg>Shots &amp; pitch
+      </button>
+      <button class="nb" onclick="goPage('heatmap',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="3" height="3"/><rect x="5.5" y="1" width="3" height="3"/><rect x="10" y="1" width="3" height="3"/><rect x="1" y="5.5" width="3" height="3"/><rect x="5.5" y="5.5" width="3" height="3"/><rect x="10" y="5.5" width="3" height="3"/><rect x="1" y="10" width="3" height="3"/><rect x="5.5" y="10" width="3" height="3"/><rect x="10" y="10" width="3" height="3"/></svg>Heatmap<span class="nb-badge">New</span>
+      </button>
+      <button class="nb" onclick="goPage('stages',this)">
+        <svg class="ni" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 13V8l3-3 3 2 3-4 3 2"/></svg>Stages
+      </button>
+    </div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-grid">
+      <div class="sb-cell"><div class="sb-cell-n">54K</div><div class="sb-cell-l">Records</div></div>
+      <div class="sb-cell"><div class="sb-cell-n">1,050</div><div class="sb-cell-l">Matches</div></div>
+      <div class="sb-cell"><div class="sb-cell-n">48</div><div class="sb-cell-l">Nations</div></div>
+      <div class="sb-cell"><div class="sb-cell-n">1,386</div><div class="sb-cell-l">Players</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-title" id="tb-title">Dashboard</div>
+      <span class="tb-sep">·</span>
+      <div class="tb-sub" id="tb-sub">FIFA World Cup 2026</div>
+    </div>
+    <div class="tb-pills" id="filter-pills">
+      <button class="pill active" onclick="setFilter('all',this)">All stages</button>
+      <button class="pill" onclick="setFilter('group',this)">Group stage</button>
+      <button class="pill" onclick="setFilter('knockout',this)">Knockouts</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ OVERVIEW ══ -->
+    <div id="pg-overview" class="pg active">
+      <div class="ticket">
+        <div class="tk-body">
+          <div class="tk-eye">FIFA World Cup 2026</div>
+          <div class="tk-title">World<br>Cup<br><em>'26</em></div>
+          <div class="tk-nums">
+            <div><div class="tk-num-val ac" id="cnt-goals" data-target="3024">0</div><div class="tk-num-l">Goals</div></div>
+            <div><div class="tk-num-val" id="cnt-matches" data-target="1050">0</div><div class="tk-num-l">Matches</div></div>
+            <div><div class="tk-num-val" id="cnt-players" data-target="1386">0</div><div class="tk-num-l">Players</div></div>
+            <div><div class="tk-num-val" id="cnt-cards" data-target="4959">0</div><div class="tk-num-l">Yellow cards</div></div>
+          </div>
+        </div>
+        <div class="tk-stub">
+          <div class="stub-item"><div class="stub-l">Top scorer</div><div class="stub-v" style="font-size:13px">M. Zerrouki · NED</div></div>
+          <div class="stub-item"><div class="stub-l">Golden boot</div><div class="stub-v ac">24 goals</div></div>
+          <div class="stub-item"><div class="stub-l">Best rating</div><div class="stub-v ac">8.8 — Adams</div></div>
+          <div class="stub-item"><div class="stub-l">Top assists</div><div class="stub-v" style="font-size:13px">El Yamiq · 13</div></div>
+          <div class="stub-item"><div class="stub-l">Goals / match</div><div class="stub-v">2.88</div></div>
+          <div class="barcode" id="barcode"></div>
+        </div>
+      </div>
+
+      <div class="strips">
+        <div class="strip"><div class="strip-n ac">3,024</div><div class="strip-l">Goals scored</div><div class="strip-delta">▲ 2.88/match</div></div>
+        <div class="strip"><div class="strip-n">2,859</div><div class="strip-l">Total assists</div></div>
+        <div class="strip"><div class="strip-n">40.4%</div><div class="strip-l">Home win rate</div></div>
+        <div class="strip"><div class="strip-n bl">24,409</div><div class="strip-l">Shots taken</div></div>
+        <div class="strip"><div class="strip-n">4,959</div><div class="strip-l">Yellow cards</div></div>
+        <div class="strip"><div class="strip-n rd">306</div><div class="strip-l">Red cards</div></div>
+      </div>
+
+      <div class="sh"><div class="sh-l">Goals per stage</div><div class="sh-r"></div><div class="sh-m">Filterable · both charts update</div></div>
+      <div class="g2">
+        <div class="panel">
+          <div class="pl">Total goals — use filter pills top right</div>
+          <div class="cw" style="height:170px"><canvas id="stageChart"></canvas></div>
+          <div class="ann">Knockouts average <strong>3.09 goals/match</strong>. Semi-finals are the peak at <strong>3.19/match</strong>.</div>
+        </div>
+        <div class="panel">
+          <div class="pl">Cards by stage</div>
+          <div class="cw" style="height:170px"><canvas id="cardsChart"></canvas></div>
+          <div class="ileg" style="margin-top:8px">
+            <div class="ileg-item"><div class="ileg-dot" style="background:var(--yellow)"></div>Yellow</div>
+            <div class="ileg-item"><div class="ileg-dot" style="background:var(--red)"></div>Red</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g3">
+        <div class="panel">
+          <div class="pl">Match outcomes</div>
+          <div class="cw" style="height:130px"><canvas id="outcomesDonut"></canvas></div>
+          <div style="margin-top:10px">
+            <div class="dl"><div class="dl-dot" style="background:var(--accent)"></div><div class="dl-l">Home win</div><div class="dl-v">424 (40.4%)</div></div>
+            <div class="dl"><div class="dl-dot" style="background:var(--line3)"></div><div class="dl-l">Draw</div><div class="dl-v">276 (26.3%)</div></div>
+            <div class="dl"><div class="dl-dot" style="background:var(--red)"></div><div class="dl-l">Away win</div><div class="dl-v">350 (33.3%)</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="pl">Goals + assists by position</div>
+          <div class="cmp-row"><div class="cmp-label">Forward</div><div class="cmp-bars"><div class="cmp-bar" style="width:100%;background:var(--accent)"></div><div class="cmp-bar" style="width:72.1%;background:var(--blue)"></div></div><div class="cmp-nums">1,805 / 987</div></div>
+          <div class="cmp-row"><div class="cmp-label">Midfielder</div><div class="cmp-bars"><div class="cmp-bar" style="width:48%;background:var(--accent)"></div><div class="cmp-bar" style="width:100%;background:var(--blue)"></div></div><div class="cmp-nums">866 / 1,368</div></div>
+          <div class="cmp-row"><div class="cmp-label">Defender</div><div class="cmp-bars"><div class="cmp-bar" style="width:19.6%;background:var(--accent)"></div><div class="cmp-bar" style="width:33%;background:var(--blue)"></div></div><div class="cmp-nums">353 / 452</div></div>
+          <div class="cmp-row"><div class="cmp-label">Goalkeeper</div><div class="cmp-bars"><div class="cmp-bar" style="width:.1%;background:var(--dim)"></div><div class="cmp-bar" style="width:3.8%;background:var(--blue)"></div></div><div class="cmp-nums">0 / 52</div></div>
+          <div class="ileg" style="margin-top:10px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Goals</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--blue)"></div>Assists</div></div>
+        </div>
+        <div class="panel">
+          <div class="pl">Preferred foot · market value</div>
+          <div style="display:flex;gap:16px;margin-bottom:10px;align-items:flex-end">
+            <div><div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-.03em">74.4%</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Right · 928</div></div>
+            <div><div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.03em">25.6%</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Left · 320</div></div>
+          </div>
+          <div class="fbar"><div style="flex:928;background:var(--accent)"></div><div style="flex:320;background:var(--line3)"></div></div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+            <div class="pl">Median market value by position</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--accent);letter-spacing:-.02em">€13.5M</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Forward</div></div>
+              <div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.02em">€11.4M</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Midfielder</div></div>
+              <div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.02em">€8.0M</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Defender</div></div>
+              <div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.02em">€5.8M</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Goalkeeper</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCORERS ══ -->
+    <div id="pg-scorers" class="pg">
+      <div class="sh"><div class="sh-l">Golden boot race</div><div class="sh-r"></div><div class="sh-m">Top 8</div></div>
+      <div class="g32">
+        <div class="panel">
+          <div class="sr"><div class="sr-n">01</div><div><div class="sr-name">Memphis Zerrouki</div><div class="sr-nat">Netherlands · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:100%;background:var(--accent)"></div></div><div class="sr-val" style="color:var(--accent)">24</div></div>
+          <div class="sr"><div class="sr-n">02</div><div><div class="sr-name">Kasey Hector</div><div class="sr-nat">Jamaica · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:66.7%;background:var(--accent)"></div></div><div class="sr-val">16</div></div>
+          <div class="sr"><div class="sr-n">03</div><div><div class="sr-name">Mohannad Majeed</div><div class="sr-nat">Iraq · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:62.5%;background:var(--accent)"></div></div><div class="sr-val">15</div></div>
+          <div class="sr"><div class="sr-n">03</div><div><div class="sr-name">Eric Rodriguez</div><div class="sr-nat">Panama · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:62.5%;background:var(--accent)"></div></div><div class="sr-val">15</div></div>
+          <div class="sr"><div class="sr-n">03</div><div><div class="sr-name">Dominik Kramaric</div><div class="sr-nat">Croatia · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:62.5%;background:var(--accent)"></div></div><div class="sr-val">15</div></div>
+          <div class="sr"><div class="sr-n">03</div><div><div class="sr-name">Vinicius Nunes</div><div class="sr-nat">Brazil · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:62.5%;background:var(--accent)"></div></div><div class="sr-val">15</div></div>
+          <div class="sr"><div class="sr-n">07</div><div><div class="sr-name">Eric Mba</div><div class="sr-nat">Cameroon · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:58.3%;background:var(--accent)"></div></div><div class="sr-val">14</div></div>
+          <div class="sr"><div class="sr-n">07</div><div><div class="sr-name">Randal Duarte</div><div class="sr-nat">Costa Rica · FWD</div></div><div class="sr-bar"><div class="sr-fill" style="width:58.3%;background:var(--accent)"></div></div><div class="sr-val">14</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1px;background:var(--line)">
+          <div class="panel" style="flex:1">
+            <div class="pl">Goals by nationality</div>
+            <div class="br"><div class="br-l">Qatari</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--accent)"></div></div><div class="br-v">95</div></div>
+            <div class="br"><div class="br-l">Dutch</div><div class="br-t"><div class="br-f" style="width:98.9%;background:var(--accent)"></div></div><div class="br-v">94</div></div>
+            <div class="br"><div class="br-l">Panamanian</div><div class="br-t"><div class="br-f" style="width:94.7%;background:var(--accent)"></div></div><div class="br-v">90</div></div>
+            <div class="br"><div class="br-l">Cameroonian</div><div class="br-t"><div class="br-f" style="width:92.6%;background:var(--accent)"></div></div><div class="br-v">88</div></div>
+            <div class="br"><div class="br-l">Saudi</div><div class="br-t"><div class="br-f" style="width:86.3%;background:var(--accent)"></div></div><div class="br-v">82</div></div>
+            <div class="br"><div class="br-l">Jamaican</div><div class="br-t"><div class="br-f" style="width:83.2%;background:var(--accent)"></div></div><div class="br-v">79</div></div>
+            <div class="br"><div class="br-l">Tunisian</div><div class="br-t"><div class="br-f" style="width:82.1%;background:var(--accent)"></div></div><div class="br-v">78</div></div>
+          </div>
+          <div class="panel">
+            <div class="pl">Top assist makers</div>
+            <div class="br"><div class="br-l">El Yamiq</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--blue)"></div></div><div class="br-v">13</div></div>
+            <div class="br"><div class="br-l">A. Sanchez</div><div class="br-t"><div class="br-f" style="width:92.3%;background:var(--blue)"></div></div><div class="br-v">12</div></div>
+            <div class="br"><div class="br-l">Choupo-Moting</div><div class="br-t"><div class="br-f" style="width:84.6%;background:var(--blue)"></div></div><div class="br-v">11</div></div>
+            <div class="br"><div class="br-l">Armstrong</div><div class="br-t"><div class="br-f" style="width:76.9%;background:var(--blue)"></div></div><div class="br-v">10</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="sh"><div class="sh-l">Shot accuracy vs conversion</div><div class="sh-r"></div></div>
+      <div class="g2">
+        <div class="panel">
+          <div class="pl">Shot accuracy and conversion by position</div>
+          <div class="cw" style="height:170px"><canvas id="shotsChart"></canvas></div>
+          <div class="ileg" style="margin-top:8px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Accuracy %</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--blue)"></div>Conversion %</div></div>
+        </div>
+        <div class="panel">
+          <div class="pl">Total shots by position</div>
+          <div class="cw" style="height:170px"><canvas id="scorerDonut"></canvas></div>
+          <div style="margin-top:10px">
+            <div class="dl"><div class="dl-dot" style="background:var(--accent)"></div><div class="dl-l">Forward</div><div class="dl-v">12,404 · 50.8%</div></div>
+            <div class="dl"><div class="dl-dot" style="background:var(--blue)"></div><div class="dl-l">Midfielder</div><div class="dl-v">7,911 · 32.4%</div></div>
+            <div class="dl"><div class="dl-dot" style="background:var(--green)"></div><div class="dl-l">Defender</div><div class="dl-v">4,094 · 16.8%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TEAMS ══ -->
+    <div id="pg-teams" class="pg">
+      <div class="sh"><div class="sh-l">Team standings</div><div class="sh-r"></div><div class="sh-m">Click headers to sort</div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="t-hdr">
+          <div>#</div><div>Team</div>
+          <div><button class="sort-btn" onclick="sortTable('w')">W</button></div>
+          <div><button class="sort-btn" onclick="sortTable('d')">D</button></div>
+          <div><button class="sort-btn" onclick="sortTable('l')">L</button></div>
+          <div><button class="sort-btn" onclick="sortTable('gf')">GF</button></div>
+          <div><button class="sort-btn" onclick="sortTable('ga')">GA</button></div>
+          <div style="text-align:right"><button class="sort-btn desc" onclick="sortTable('pts')">Pts</button></div>
+          <div style="text-align:right">Form</div>
+        </div>
+        <div id="team-table-body"></div>
+      </div>
+      <div class="sh"><div class="sh-l">Win / draw / loss breakdown</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Top 6 teams — stacked horizontal</div>
+        <div class="cw" style="height:210px"><canvas id="wdlChart"></canvas></div>
+        <div class="ileg" style="margin-top:8px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Win</div><div class="ileg-item"><div class="ileg-dot" style="background:#2a2a2a"></div>Draw</div><div class="ileg-item"><div class="ileg-dot" style="background:rgba(255,71,71,.55)"></div>Loss</div></div>
+      </div>
+    </div>
+
+    <!-- ══ COMPARE ══ -->
+    <div id="pg-compare" class="pg">
+      <div class="sh"><div class="sh-l">Head-to-head comparison</div><div class="sh-r"></div><div class="sh-m">Select two teams</div></div>
+      <div class="compare-grid">
+        <div class="compare-panel">
+          <select class="team-select" id="team-a-select" onchange="renderCompare()">
+            <option value="Qatar">Qatar</option><option value="Jamaica">Jamaica</option><option value="Morocco">Morocco</option><option value="Belgium">Belgium</option><option value="Nigeria">Nigeria</option><option value="Brazil">Brazil</option><option value="Colombia">Colombia</option><option value="Turkey">Turkey</option><option value="Scotland">Scotland</option><option value="Saudi Arabia">Saudi Arabia</option>
+          </select>
+          <div id="compare-left"></div>
+        </div>
+        <div class="compare-vs">VS</div>
+        <div class="compare-panel">
+          <select class="team-select" id="team-b-select" onchange="renderCompare()">
+            <option value="Qatar">Qatar</option><option value="Jamaica" selected>Jamaica</option><option value="Morocco">Morocco</option><option value="Belgium">Belgium</option><option value="Nigeria">Nigeria</option><option value="Brazil">Brazil</option><option value="Colombia">Colombia</option><option value="Turkey">Turkey</option><option value="Scotland">Scotland</option><option value="Saudi Arabia">Saudi Arabia</option>
+          </select>
+          <div id="compare-right"></div>
+        </div>
+      </div>
+      <div class="sh"><div class="sh-l">Visual comparison</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Side-by-side radar — wins · gf · pts · win% · gd</div>
+        <div class="cw" style="height:260px"><canvas id="compareRadar"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ══ DISCIPLINE ══ -->
+    <div id="pg-discipline" class="pg">
+      <div class="sh"><div class="sh-l">Cards overview</div><div class="sh-r"></div></div>
+      <div class="g3">
+        <div class="panel"><div class="pl">Total yellow cards</div><div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--yellow);letter-spacing:-.04em;line-height:1">4,959</div><div style="font-size:9px;color:var(--sub);margin-top:5px">4.72 per match avg</div></div>
+        <div class="panel"><div class="pl">Total red cards</div><div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--red);letter-spacing:-.04em;line-height:1">306</div><div style="font-size:9px;color:var(--sub);margin-top:5px">0.29 per match avg</div></div>
+        <div class="panel"><div class="pl">Peak card intensity</div><div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-bottom:5px">Semi Finals</div><div style="font-size:9px;color:var(--sub)">5.95 yellows per match</div><div style="font-size:9px;color:var(--dim);margin-top:2px">Group vol: 2,806 · 158 red</div></div>
+      </div>
+      <div class="sh"><div class="sh-l">Cards by stage</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Yellow and red cards — all 7 stages</div>
+        <div class="cw" style="height:200px"><canvas id="disciplineChart"></canvas></div>
+        <div class="ileg" style="margin-top:8px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--yellow)"></div>Yellow</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--red)"></div>Red</div></div>
+      </div>
+      <div class="sh"><div class="sh-l">Cards per match by stage</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Yellow card intensity increases through knockouts</div>
+        <div class="stb"><div class="stb-l">Group Stage</div><div class="stb-t"><div class="stb-f" style="width:81.5%;background:rgba(252,207,0,.45)"></div></div><div class="stb-v">4.85</div></div>
+        <div class="stb"><div class="stb-l">Round of 32</div><div class="stb-t"><div class="stb-f" style="width:85.5%;background:rgba(252,207,0,.5)"></div></div><div class="stb-v">5.09</div></div>
+        <div class="stb"><div class="stb-l">Round of 16</div><div class="stb-t"><div class="stb-f" style="width:89.4%;background:rgba(252,207,0,.57)"></div></div><div class="stb-v">5.32</div></div>
+        <div class="stb"><div class="stb-l">Quarter Finals</div><div class="stb-t"><div class="stb-f" style="width:99%;background:rgba(252,207,0,.7)"></div></div><div class="stb-v" style="color:var(--text)">5.89</div></div>
+        <div class="stb"><div class="stb-l">Semi Finals</div><div class="stb-t"><div class="stb-f" style="width:100%;background:rgba(252,207,0,.95)"></div></div><div class="stb-v" style="color:var(--accent);font-weight:600">5.95 ↑</div></div>
+        <div class="stb"><div class="stb-l">Third Place</div><div class="stb-t"><div class="stb-f" style="width:77.6%;background:rgba(252,207,0,.38)"></div></div><div class="stb-v" style="color:var(--sub)">4.62</div></div>
+        <div class="stb"><div class="stb-l">Final</div><div class="stb-t"><div class="stb-f" style="width:95.9%;background:rgba(252,207,0,.75)"></div></div><div class="stb-v">5.71</div></div>
+        <div class="ann">Card intensity peaks in <strong>semi-finals (5.95/match)</strong>, exceeding even the final (5.71). Tensions run highest before the biggest stage.</div>
+      </div>
+    </div>
+
+    <!-- ══ RATINGS ══ -->
+    <div id="pg-ratings" class="pg">
+      <div class="sh"><div class="sh-l">Top rated players</div><div class="sh-r"></div></div>
+      <div class="pcg">
+        <div class="pc"><div class="pc-r">8.8</div><div class="pc-n">Andrew Adams</div><div class="pc-nat">Scotland</div><div class="pc-pos">Defender</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.8</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:88%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.7</div><div class="pc-n">Abdelaziz Ismaeel</div><div class="pc-nat">Qatar</div><div class="pc-pos">Defender</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.7</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:87%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.6</div><div class="pc-n">Ahmed Abdallah</div><div class="pc-nat">Egypt</div><div class="pc-pos">Defender</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.6</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:86%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.4</div><div class="pc-n">Gavi Ramos</div><div class="pc-nat">Spain</div><div class="pc-pos">Midfielder</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.4</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:84%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.4</div><div class="pc-n">Memphis Zerrouki</div><div class="pc-nat">Netherlands</div><div class="pc-pos">Forward</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.4</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:84%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.4</div><div class="pc-n">Stephan Guglielmo</div><div class="pc-nat">Italy</div><div class="pc-pos">Defender</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.4</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:84%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.4</div><div class="pc-n">Hidajat Hazbavi</div><div class="pc-nat">Iran</div><div class="pc-pos">Midfielder</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.4</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:84%"></div></div></div></div>
+        <div class="pc"><div class="pc-r">8.1</div><div class="pc-n">Richarlison Ferreira</div><div class="pc-nat">Brazil</div><div class="pc-pos">Defender</div><div class="pc-bar"><div class="pc-bar-lbl"><span>Rating</span><span style="color:var(--accent)">8.1</span></div><div class="pc-bar-t"><div class="pc-bar-f" style="width:81%"></div></div></div></div>
+      </div>
+      <div class="g2">
+        <div class="panel" style="border:1px solid var(--line)">
+          <div class="pl">Rating by age (17–36)</div>
+          <div class="cw" style="height:170px"><canvas id="ageChart"></canvas></div>
+          <div class="ann">Peak window: <strong>ages 20–27</strong>. Decline accelerates post-33.</div>
+        </div>
+        <div class="panel" style="border:1px solid var(--line)">
+          <div class="pl">Rating vs market value — scatter</div>
+          <div class="cw" style="height:170px"><canvas id="scatterChart"></canvas></div>
+          <div class="ileg" style="margin-top:8px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Forward</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--blue)"></div>Midfielder</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--green)"></div>Defender</div></div>
+        </div>
+      </div>
+      <div class="sh"><div class="sh-l">Clutch vs creativity</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Clutch · creativity · pressure · rating — radar comparison</div>
+        <div class="cw" style="height:220px"><canvas id="clutchChart"></canvas></div>
+        <div class="ileg" style="margin-top:8px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Aymen Attwan</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--blue)"></div>Mostafa Hegazi</div></div>
+      </div>
+    </div>
+
+    <!-- ══ PHYSICAL ══ -->
+    <div id="pg-physical" class="pg">
+      <div class="sh"><div class="sh-l">Physical data</div><div class="sh-r"></div><div class="sh-m">Per match averages</div></div>
+      <div class="g4">
+        <div class="panel"><div class="pl">Distance (km/match)</div><div class="br"><div class="br-l">Midfielder</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--accent)"></div></div><div class="br-v">4.50</div></div><div class="br"><div class="br-l">Forward</div><div class="br-t"><div class="br-f" style="width:91.6%;background:var(--accent)"></div></div><div class="br-v">4.12</div></div><div class="br"><div class="br-l">Defender</div><div class="br-t"><div class="br-f" style="width:88.7%;background:var(--accent)"></div></div><div class="br-v">3.99</div></div><div class="br"><div class="br-l">Goalkeeper</div><div class="br-t"><div class="br-f" style="width:53.6%;background:var(--dim)"></div></div><div class="br-v">2.41</div></div></div>
+        <div class="panel"><div class="pl">Top speed (km/h)</div><div class="br"><div class="br-l">Midfielder</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--green)"></div></div><div class="br-v">19.9</div></div><div class="br"><div class="br-l">Forward</div><div class="br-t"><div class="br-f" style="width:99.9%;background:var(--green)"></div></div><div class="br-v">19.9</div></div><div class="br"><div class="br-l">Defender</div><div class="br-t"><div class="br-f" style="width:99.4%;background:var(--green)"></div></div><div class="br-v">19.8</div></div><div class="br"><div class="br-l">Goalkeeper</div><div class="br-t"><div class="br-f" style="width:48.7%;background:var(--dim)"></div></div><div class="br-v">9.68</div></div></div>
+        <div class="panel"><div class="pl">Sprint distance (km)</div><div class="br"><div class="br-l">Midfielder</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--blue)"></div></div><div class="br-v">0.52</div></div><div class="br"><div class="br-l">Forward</div><div class="br-t"><div class="br-f" style="width:92.3%;background:var(--blue)"></div></div><div class="br-v">0.48</div></div><div class="br"><div class="br-l">Defender</div><div class="br-t"><div class="br-f" style="width:88.5%;background:var(--blue)"></div></div><div class="br-v">0.46</div></div><div class="br"><div class="br-l">Goalkeeper</div><div class="br-t"><div class="br-f" style="width:53.8%;background:var(--dim)"></div></div><div class="br-v">0.28</div></div></div>
+        <div class="panel"><div class="pl">Stamina (/ 100)</div><div class="br"><div class="br-l">Midfielder</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--orange)"></div></div><div class="br-v">82.4</div></div><div class="br"><div class="br-l">Forward</div><div class="br-t"><div class="br-f" style="width:100%;background:var(--orange)"></div></div><div class="br-v">82.4</div></div><div class="br"><div class="br-l">Defender</div><div class="br-t"><div class="br-f" style="width:99.8%;background:var(--orange)"></div></div><div class="br-v">82.2</div></div><div class="br"><div class="br-l">Goalkeeper</div><div class="br-t"><div class="br-f" style="width:95.6%;background:var(--orange)"></div></div><div class="br-v">78.8</div></div></div>
+      </div>
+      <div class="sh"><div class="sh-l">Physical radar + grouped comparison</div><div class="sh-r"></div></div>
+      <div class="g2">
+        <div class="panel" style="border:1px solid var(--line)">
+          <div class="pl">All four attributes normalised</div>
+          <div class="ileg" style="margin-bottom:10px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Forward</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--blue)"></div>Midfielder</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--green)"></div>Defender</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--dim)"></div>GK</div></div>
+          <div class="cw" style="height:240px"><canvas id="physRadar"></canvas></div>
+        </div>
+        <div class="panel" style="border:1px solid var(--line)">
+          <div class="pl">Distance covered per position — grouped</div>
+          <div class="cw" style="height:260px"><canvas id="physGrouped"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SHOTS ══ -->
+    <div id="pg-shots" class="pg">
+      <div class="sh"><div class="sh-l">Pitch zone analysis</div><div class="sh-r"></div><div class="sh-m">Goal distribution visualization</div></div>
+      <div class="g23">
+        <div class="panel pitch-wrap" style="padding:0;min-height:260px">
+          <canvas id="pitchCanvas" style="width:100%;height:260px"></canvas>
+        </div>
+        <div class="panel">
+          <div class="pl">Shot funnel — forwards</div>
+          <div class="funnel-row"><div class="funnel-lbl"><span>Shots attempted</span><span style="color:var(--text)">12,404</span></div><div class="funnel-bar" style="background:var(--accent);width:100%"><span class="funnel-count" style="color:#000">100%</span></div></div>
+          <div class="funnel-row"><div class="funnel-lbl"><span>On target (est.)</span><span style="color:var(--text)">~2,009</span></div><div class="funnel-bar" style="background:rgba(212,255,0,.55);width:16.2%"><span class="funnel-count">16.2%</span></div></div>
+          <div class="funnel-row"><div class="funnel-lbl"><span>Goals</span><span style="color:var(--text)">1,805</span></div><div class="funnel-bar" style="background:rgba(212,255,0,.28);width:14.6%"><span class="funnel-count">14.6%</span></div></div>
+          <div class="ann">Forwards: <strong>14.6%</strong> conversion. Midfielders: 10.9%. Defenders: 8.6%.</div>
+        </div>
+      </div>
+      <div class="g4">
+        <div class="panel"><div class="pl">Forward</div><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.03em">12,404</div><div style="font-size:8px;color:var(--sub);margin-top:2px">shots</div><div style="margin-top:10px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Accuracy</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent)">16.2%</div></div><div style="margin-top:5px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Conversion</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green)">14.6%</div></div></div>
+        <div class="panel"><div class="pl">Midfielder</div><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.03em">7,911</div><div style="font-size:8px;color:var(--sub);margin-top:2px">shots</div><div style="margin-top:10px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Accuracy</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent)">7.0%</div></div><div style="margin-top:5px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Conversion</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green)">10.9%</div></div></div>
+        <div class="panel"><div class="pl">Defender</div><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.03em">4,094</div><div style="font-size:8px;color:var(--sub);margin-top:2px">shots</div><div style="margin-top:10px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Accuracy</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent)">1.9%</div></div><div style="margin-top:5px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Conversion</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green)">8.6%</div></div></div>
+        <div class="panel"><div class="pl">All positions</div><div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--accent);letter-spacing:-.03em">24,409</div><div style="font-size:8px;color:var(--sub);margin-top:2px">total shots</div><div style="margin-top:10px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Goals</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text)">3,024</div></div><div style="margin-top:5px"><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Overall conv.</div><div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--green)">12.4%</div></div></div>
+      </div>
+    </div>
+
+    <!-- ══ HEATMAP ══ -->
+    <div id="pg-heatmap" class="pg">
+      <div class="sh"><div class="sh-l">Goals × Stage heatmap</div><div class="sh-r"></div><div class="sh-m">Hover cells for details</div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Goals by position × tournament stage — intensity grid</div>
+        <div id="heatmap-container" style="margin-top:4px"></div>
+      </div>
+      <div class="sh"><div class="sh-l">Cards heatmap</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Yellow cards by position × stage</div>
+        <div id="cards-heatmap-container" style="margin-top:4px"></div>
+      </div>
+      <div class="sh"><div class="sh-l">Nation goals heatmap</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Top 8 nations — goals across stages</div>
+        <div id="nation-heatmap-container" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- ══ STAGES ══ -->
+    <div id="pg-stages" class="pg">
+      <div class="sh"><div class="sh-l">Stage breakdown</div><div class="sh-r"></div></div>
+      <div class="g3">
+        <div class="panel"><div class="pl">Group stage</div><div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:var(--text);letter-spacing:-.04em;line-height:1">578</div><div style="font-size:8px;color:var(--sub);margin-top:4px">matches played</div><div style="display:flex;gap:16px;margin-top:12px"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-.02em">1,630</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Goals</div></div><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em">2.82</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Per match</div></div></div></div>
+        <div class="panel"><div class="pl">Knockout rounds</div><div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:var(--text);letter-spacing:-.04em;line-height:1">451</div><div style="font-size:8px;color:var(--sub);margin-top:4px">R32 → Final</div><div style="display:flex;gap:16px;margin-top:12px"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-.02em">1,394</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Goals</div></div><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-.02em">3.09</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Per match</div></div></div></div>
+        <div class="panel"><div class="pl">Semi-final peak</div><div style="font-family:'Syne',sans-serif;font-size:44px;font-weight:800;color:var(--accent);letter-spacing:-.04em;line-height:1">3.19</div><div style="font-size:8px;color:var(--sub);margin-top:4px">goals/match — tournament high</div><div style="display:flex;gap:16px;margin-top:12px"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em">134</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">SF goals</div></div><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.02em">2.95</div><div style="font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:2px">Final avg</div></div></div></div>
+      </div>
+      <div class="sh"><div class="sh-l">Tournament arc</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Goals total (solid) vs goals per match (dashed) — full tournament</div>
+        <div class="cw" style="height:200px"><canvas id="stagesLineChart"></canvas></div>
+        <div class="ileg" style="margin-top:8px"><div class="ileg-item"><div class="ileg-dot" style="background:var(--accent)"></div>Total goals (left axis)</div><div class="ileg-item"><div class="ileg-dot" style="background:var(--blue)"></div>Goals/match (right axis)</div></div>
+        <div class="ann">Semi-finals at <strong>3.19/match</strong> surpass every other stage including the final. Third place matches (2.71) reflect reduced competitive pressure.</div>
+      </div>
+      <div class="sh"><div class="sh-l">Goals per match intensity</div><div class="sh-r"></div></div>
+      <div class="panel" style="border:1px solid var(--line);margin-bottom:18px">
+        <div class="pl">Bar comparison across all stages</div>
+        <div class="stb"><div class="stb-l">Group Stage</div><div class="stb-t"><div class="stb-f" style="width:75.2%;background:var(--accent)"></div></div><div class="stb-v">2.82</div></div>
+        <div class="stb"><div class="stb-l">Round of 32</div><div class="stb-t"><div class="stb-f" style="width:79.8%;background:var(--accent)"></div></div><div class="stb-v">2.99</div></div>
+        <div class="stb"><div class="stb-l">Round of 16</div><div class="stb-t"><div class="stb-f" style="width:77.1%;background:var(--accent)"></div></div><div class="stb-v">2.89</div></div>
+        <div class="stb"><div class="stb-l">Quarter Finals</div><div class="stb-t"><div class="stb-f" style="width:77.9%;background:var(--accent)"></div></div><div class="stb-v">2.92</div></div>
+        <div class="stb"><div class="stb-l">Semi Finals</div><div class="stb-t"><div class="stb-f" style="width:85.1%;background:var(--accent)"></div></div><div class="stb-v" style="color:var(--accent);font-weight:600">3.19 ↑</div></div>
+        <div class="stb"><div class="stb-l">Third Place</div><div class="stb-t"><div class="stb-f" style="width:72.3%;background:var(--dim)"></div></div><div class="stb-v" style="color:var(--sub)">2.71</div></div>
+        <div class="stb"><div class="stb-l">Final</div><div class="stb-t"><div class="stb-f" style="width:78.7%;background:var(--accent)"></div></div><div class="stb-v">2.95</div></div>
+      </div>
+    </div>
+
+    <div class="pfoot"><span>FIFA World Cup 2026 · Player Performance Analytics</span><span>54,600 records · 75 columns · 48 nations</span></div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+var G={accent:'#d4ff00',green:'#3ddc84',red:'#ff4747',blue:'#5b9cf6',orange:'#ff8c42',purple:'#a78bfa',yellow:'rgba(252,207,0,.85)',sub:'#6a6a6a',dim:'#2e2e2e',grid:'#181818',text:'#efefef'};
+Chart.defaults.font.family="'Inter',sans-serif";Chart.defaults.font.size=11;Chart.defaults.color=G.sub;
+
+var SD={
+  all:{labels:['Group','R32','R16','QF','SF','3rd','Final'],goals:[1630,532,364,245,134,57,62],yellow:[2806,907,671,495,250,97,120],red:[158,50,32,30,15,11,10]},
+  group:{labels:['Group Stage'],goals:[1630],yellow:[2806],red:[158]},
+  knockout:{labels:['R32','R16','QF','SF','3rd','Final'],goals:[532,364,245,134,57,62],yellow:[907,671,495,250,97,120],red:[50,32,30,15,11,10]}
+};
+var stageChart=null,cardsChart=null;
+
+var TEAMS=[
+  {name:'Qatar',w:24,d:20,l:22,gf:103,ga:94,pts:92,form:['W','D','W','L','W']},
+  {name:'Jamaica',w:27,d:9,l:23,gf:88,ga:80,pts:90,form:['W','W','L','W','D']},
+  {name:'Morocco',w:24,d:16,l:15,gf:78,ga:54,pts:88,form:['W','D','W','D','W']},
+  {name:'Belgium',w:24,d:11,l:16,gf:79,ga:70,pts:83,form:['L','W','W','D','W']},
+  {name:'Nigeria',w:23,d:10,l:7,gf:68,ga:42,pts:79,form:['W','W','D','W','W']},
+  {name:'Brazil',w:22,d:11,l:12,gf:71,ga:58,pts:77,form:['D','W','L','W','W']},
+  {name:'Colombia',w:24,d:4,l:18,gf:74,ga:62,pts:76,form:['W','L','W','L','W']},
+  {name:'Turkey',w:21,d:13,l:16,gf:63,ga:59,pts:76,form:['D','W','D','W','L']},
+  {name:'Scotland',w:20,d:15,l:14,gf:67,ga:60,pts:75,form:['W','D','W','D','W']},
+  {name:'Saudi Arabia',w:20,d:13,l:19,gf:70,ga:72,pts:73,form:['L','W','W','L','W']}
+];
+var sortCol='pts',sortDir='desc';
+var compareChart=null;
+
+function animateCounter(el){
+  var target=+el.dataset.target,dur=1400,s=performance.now();
+  function step(ts){var p=Math.min((ts-s)/dur,1),e=1-Math.pow(1-p,4);el.textContent=Math.round(target*e).toLocaleString();if(p<1)requestAnimationFrame(step);else el.textContent=target.toLocaleString();}
+  requestAnimationFrame(step);
+}
+
+function buildBarcode(){
+  var el=document.getElementById('barcode');if(!el)return;
+  var s=[2,1,3,1,2,1,4,1,1,2,3,1,2,1,3,2,1,1,2,3,1,2,1,4,1,2,3];
+  el.innerHTML=s.map(function(w){return '<div class="bc-bar" style="width:'+w+'px;height:'+(10+Math.random()*14|0)+'px"></div>';}).join('');
+}
+
+function setFilter(mode,btn){
+  document.querySelectorAll('#filter-pills .pill').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  var d=SD[mode];
+  if(stageChart){stageChart.data.labels=d.labels.slice();stageChart.data.datasets[0].data=d.goals.slice();stageChart.update();}
+  if(cardsChart){cardsChart.data.labels=d.labels.slice();cardsChart.data.datasets[0].data=d.yellow.slice();cardsChart.data.datasets[1].data=d.red.slice();cardsChart.update();}
+}
+
+function renderTable(){
+  var s=[].concat(TEAMS).sort(function(a,b){return sortDir==='desc'?b[sortCol]-a[sortCol]:a[sortCol]-b[sortCol];});
+  var fc={'W':G.green,'D':G.sub,'L':G.red};
+  document.getElementById('team-table-body').innerHTML=s.map(function(t,i){
+    var gd=t.gf-t.ga,gdStr=(gd>0?'+':'')+gd;
+    var formDots=t.form.map(function(r){return '<div class="form-dot" style="background:'+fc[r]+'" title="'+r+'"></div>';}).join('');
+    return '<div class="t-row"><div class="t-pos">'+(i+1)+'</div><div class="t-name">'+t.name+'</div><div>'+t.w+'</div><div>'+t.d+'</div><div>'+t.l+'</div><div>'+t.gf+'</div><div>'+t.ga+'</div><div class="t-pts">'+t.pts+'</div><div class="t-form">'+formDots+'</div></div>';
+  }).join('');
+}
+function sortTable(col){
+  if(sortCol===col)sortDir=sortDir==='desc'?'asc':'desc';else{sortCol=col;sortDir='desc';}
+  document.querySelectorAll('.sort-btn').forEach(function(b){b.classList.remove('asc','desc');});
+  var btn=document.querySelector('.sort-btn[onclick="sortTable(\''+col+'\')"]');
+  if(btn)btn.classList.add(sortDir);
+  renderTable();
+}
+
+function renderCompare(){
+  var aName=document.getElementById('team-a-select').value;
+  var bName=document.getElementById('team-b-select').value;
+  var a=TEAMS.find(function(t){return t.name===aName;});
+  var b=TEAMS.find(function(t){return t.name===bName;});
+  var stats=[{k:'pts',l:'Points'},{k:'w',l:'Wins'},{k:'gf',l:'Goals for'},{k:'ga',l:'Goals against'},{k:'d',l:'Draws'}];
+  function side(t,other,el){
+    el.innerHTML=stats.map(function(s){
+      var tw=t[s.k],ow=other[s.k];
+      var isGa=s.k==='ga';
+      var aWins=isGa?(tw<ow):(tw>ow);
+      var max=Math.max(tw,ow)||1;
+      var pct=Math.round(tw/max*100);
+      return '<div class="compare-stat-row"><div class="csr-val-l '+(aWins?'winner':'')+'">'+tw+'</div><div style="flex:1;position:relative;display:flex;flex-direction:column;gap:2px"><div style="font-size:7.5px;text-align:center;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">'+s.l+'</div><div style="height:3px;background:var(--line2);position:relative"><div style="position:absolute;left:0;top:0;height:3px;background:'+(aWins?G.accent:G.dim)+';width:'+pct+'%"></div></div></div><div class="csr-val-r '+(!aWins&&tw!==ow?'winner':'')+'">'+ow+'</div></div>';
+    }).join('');
+  }
+  side(a,b,document.getElementById('compare-left'));
+  side(b,a,document.getElementById('compare-right'));
+  if(compareChart)compareChart.destroy();
+  var maxPts=Math.max(a.pts,b.pts),maxW=Math.max(a.w,b.w),maxGf=Math.max(a.gf,b.gf);
+  compareChart=mkChart('compareRadar',{type:'radar',data:{labels:['Points','Wins','Goals for','Win rate','Goals/match'],datasets:[
+    {label:a.name,data:[a.pts/maxPts*100,a.w/maxW*100,a.gf/maxGf*100,Math.round(a.w/(a.w+a.d+a.l)*100),Math.round(a.gf/(a.w+a.d+a.l)*10)],borderColor:G.accent,backgroundColor:'rgba(212,255,0,.07)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.accent},
+    {label:b.name,data:[b.pts/maxPts*100,b.w/maxW*100,b.gf/maxGf*100,Math.round(b.w/(b.w+b.d+b.l)*100),Math.round(b.gf/(b.w+b.d+b.l)*10)],borderColor:G.blue,backgroundColor:'rgba(91,156,246,.07)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.blue}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{grid:{color:'#202020'},ticks:{display:false},pointLabels:{color:G.sub,font:{size:10}},angleLines:{color:'#1e1e1e'},min:0,max:100}}}});
+}
+
+function buildHeatmaps(){
+  var stages=['Group','R32','R16','QF','SF','3rd','Final'];
+  var positions=['Forward','Midfielder','Defender','Goalkeeper'];
+  var goalsData={
+    'Forward':[760,290,200,130,75,30,35],'Midfielder':[420,145,105,75,40,18,25],'Defender':[145,55,42,30,14,7,10],'Goalkeeper':[0,0,0,0,0,0,0]
+  };
+  var yellowData={
+    'Forward':[720,240,170,130,65,25,32],'Midfielder':[1050,340,240,170,90,35,42],'Defender':[850,260,200,155,75,28,36],'Goalkeeper':[186,67,61,40,20,9,10]
+  };
+  var nations=['Qatar','Netherlands','Panama','Cameroon','Saudi Arabia','Jamaica','Tunisia','Costa Rica'];
+  var nationGoals=[[28,22,18,12,8,4,3],[25,21,16,10,7,5,4],[24,20,15,12,6,5,4],[22,19,14,11,6,5,4],[20,18,14,11,6,5,4],[19,17,13,11,6,4,3],[18,16,12,10,5,5,4],[17,15,12,10,5,4,3]];
+
+  function makeHM(containerId,rows,cols,data,maxVal,colorFn){
+    var c=document.getElementById(containerId);if(!c)return;
+    var stageLabels=cols;
+    var html='<div style="display:grid;grid-template-columns:90px repeat('+cols.length+',1fr);gap:2px;font-size:8.5px">';
+    html+='<div></div>'+stageLabels.map(function(s){return '<div style="text-align:center;color:var(--sub);padding:3px 0;letter-spacing:.08em">'+s+'</div>';}).join('');
+    rows.forEach(function(row,ri){
+      var rowData=Array.isArray(data[row])?data[row]:data[ri];
+      html+='<div style="display:flex;align-items:center;color:var(--sub);font-size:9px">'+row+'</div>';
+      rowData.forEach(function(val){
+        var pct=maxVal>0?val/maxVal:0;
+        var bg=colorFn(pct);
+        var textCol=pct>0.5?'rgba(0,0,0,.8)':'rgba(255,255,255,.5)';
+        html+='<div class="hm-cell" style="background:'+bg+';color:'+textCol+';height:32px"><div class="hm-tip">'+row+' · '+val+'</div>'+val+'</div>';
+      });
+    });
+    html+='</div>';
+    c.innerHTML=html;
+  }
+  makeHM('heatmap-container',positions,stages,goalsData,760,function(p){return 'rgba(212,255,0,'+Math.max(0.05,p)+')';});
+  makeHM('cards-heatmap-container',positions,stages,yellowData,1050,function(p){return 'rgba(252,207,0,'+Math.max(0.05,p)+')';});
+  makeHM('nation-heatmap-container',nations,stages,nationGoals,28,function(p){return 'rgba(91,156,246,'+Math.max(0.05,p)+')';});
+}
+
+function drawPitch(){
+  var canvas=document.getElementById('pitchCanvas');if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var W=canvas.offsetWidth||600,H=260;
+  canvas.width=W;canvas.height=H;
+  var m=20,pw=W-m*2,ph=H-m*2;
+
+  // Pitch background
+  ctx.fillStyle='#071a07';ctx.fillRect(0,0,W,H);
+  // Stripes
+  for(var i=0;i<10;i++){ctx.fillStyle=i%2?'rgba(255,255,255,.015)':'transparent';ctx.fillRect(m+pw/10*i,m,pw/10,ph);}
+  // Lines
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;
+  ctx.strokeRect(m,m,pw,ph); // outer
+  ctx.beginPath();ctx.moveTo(m+pw/2,m);ctx.lineTo(m+pw/2,m+ph);ctx.stroke(); // halfway
+  // Centre circle
+  ctx.beginPath();ctx.arc(m+pw/2,m+ph/2,ph*0.15,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(m+pw/2,m+ph/2,2,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.3)';ctx.fill();
+  // Penalty areas
+  var bw=pw*0.16,bh=ph*0.45,by=m+(ph-bh)/2;
+  ctx.strokeRect(m,by,bw,bh);ctx.strokeRect(m+pw-bw,by,bw,bh);
+  // Goal areas
+  var gw=pw*0.06,gh=ph*0.2,gy=m+(ph-gh)/2;
+  ctx.strokeRect(m,gy,gw,gh);ctx.strokeRect(m+pw-gw,gy,gw,gh);
+  // Goals
+  ctx.strokeStyle='rgba(255,255,255,.4)';
+  ctx.strokeRect(m-8,m+ph/2-gh*0.3,8,gh*0.6);
+  ctx.strokeRect(m+pw,m+ph/2-gh*0.3,8,gh*0.6);
+
+  // Shot zones — circles proportional to goals scored from that area
+  var zones=[
+    {x:.15,y:.5,goals:1200,label:'Close range'},
+    {x:.28,y:.35,goals:450,label:'Left box'},
+    {x:.28,y:.65,goals:380,label:'Right box'},
+    {x:.18,y:.5,goals:820,label:'Six-yard box'},
+    {x:.42,y:.5,goals:180,label:'Edge of area'},
+    {x:.38,y:.38,goals:95,label:'Left channel'},
+    {x:.38,y:.62,goals:88,label:'Right channel'},
+    {x:.58,y:.5,goals:35,label:'Long range'},
+    {x:.5,y:.3,goals:22,label:'Left mid'},
+    {x:.5,y:.7,goals:20,label:'Right mid'},
+  ];
+  zones.forEach(function(z){
+    var cx=m+z.x*pw,cy=m+z.y*ph,r=Math.sqrt(z.goals/1200)*36;
+    var g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,'rgba(212,255,0,.7)');
+    g.addColorStop(1,'rgba(212,255,0,0)');
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.fillStyle=g;ctx.fill();
+  });
+
+  // Legend
+  ctx.font='9px Inter';ctx.fillStyle='rgba(255,255,255,.4)';
+  ctx.fillText('Goal zone intensity — size = goals scored',m,m-6);
+}
+
+var PAGE_LABELS={overview:'Dashboard',scorers:'Top Scorers',teams:'Standings',compare:'Compare Teams',discipline:'Discipline',ratings:'Player Ratings',physical:'Physical Data',shots:'Shots & Pitch',heatmap:'Heatmap',stages:'Stage Breakdown'};
+var PAGE_SUBS={overview:'FIFA World Cup 2026',scorers:'Golden boot & shot data',teams:'Top 10 by points',compare:'Head-to-head team stats',discipline:'Cards across all stages',ratings:'Tournament performance index',physical:'Per-match athletic metrics',shots:'Shot distribution & pitch zones',heatmap:'Goals × Cards × Nations grid',stages:'Full tournament arc'};
+
+function goPage(id,btn){
+  document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('pg-'+id).classList.add('active');
+  btn.classList.add('active');
+  document.getElementById('tb-title').textContent=PAGE_LABELS[id]||id;
+  document.getElementById('tb-sub').textContent=PAGE_SUBS[id]||'';
+  if(!window['_c_'+id]){window['_c_'+id]=true;initCharts(id);}
+}
+
+function mkChart(id,cfg){var el=document.getElementById(id);if(!el)return null;return new Chart(el,cfg);}
+function barSc(){return{x:{grid:{display:false},border:{display:false},ticks:{color:G.sub}},y:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub},beginAtZero:true}};}
+function pctSc(){return{x:{grid:{display:false},border:{display:false},ticks:{color:G.sub}},y:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub,callback:function(v){return v+'%'}},beginAtZero:true}};}
+function lineSc(mn,mx){return{x:{grid:{display:false},border:{display:false},ticks:{color:G.sub}},y:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub},min:mn,max:mx}};}
+
+function initCharts(id){
+  var d;
+  if(id==='overview'){
+    d=SD.all;
+    stageChart=mkChart('stageChart',{type:'bar',data:{labels:d.labels.slice(),datasets:[{data:d.goals.slice(),backgroundColor:G.accent,borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' goals';}}}},scales:barSc()}});
+    cardsChart=mkChart('cardsChart',{type:'bar',data:{labels:d.labels.slice(),datasets:[{label:'Yellow',data:d.yellow.slice(),backgroundColor:G.yellow,borderRadius:2,borderSkipped:false},{label:'Red',data:d.red.slice(),backgroundColor:'rgba(255,71,71,.75)',borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false}},scales:barSc()}});
+    mkChart('outcomesDonut',{type:'doughnut',data:{labels:['Home win','Draw','Away win'],datasets:[{data:[424,276,350],backgroundColor:[G.accent,'#2a2a2a','rgba(255,71,71,.8)'],borderColor:'transparent',borderWidth:0,hoverOffset:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw+' matches';}}}}}});
+  }
+  if(id==='scorers'){
+    mkChart('shotsChart',{type:'bar',data:{labels:['Forward','Midfielder','Defender'],datasets:[{label:'Accuracy %',data:[16.2,7.0,1.9],backgroundColor:G.accent,borderRadius:2,borderSkipped:false},{label:'Conversion %',data:[14.6,10.9,8.6],backgroundColor:'rgba(91,156,246,.7)',borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:pctSc()}});
+    mkChart('scorerDonut',{type:'doughnut',data:{labels:['Forward','Midfielder','Defender'],datasets:[{data:[12404,7911,4094],backgroundColor:[G.accent,'rgba(91,156,246,.85)','rgba(61,220,132,.85)'],borderColor:'transparent',borderWidth:0,hoverOffset:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toLocaleString()+' shots';}}}}}});
+  }
+  if(id==='teams'){renderTable();mkChart('wdlChart',{type:'bar',data:{labels:['Qatar','Jamaica','Morocco','Belgium','Nigeria','Brazil'],datasets:[{label:'W',data:[24,27,24,24,23,22],backgroundColor:G.accent,borderRadius:0,borderSkipped:false,stack:'s'},{label:'D',data:[20,9,16,11,10,11],backgroundColor:'#2a2a2a',borderRadius:0,borderSkipped:false,stack:'s'},{label:'L',data:[22,23,15,16,7,12],backgroundColor:'rgba(255,71,71,.5)',borderRadius:0,borderSkipped:false,stack:'s'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{color:G.grid},border:{display:false},ticks:{color:G.sub}},y:{stacked:true,grid:{display:false},border:{display:false},ticks:{color:G.sub}}}}});}
+  if(id==='compare'){renderCompare();}
+  if(id==='discipline'){mkChart('disciplineChart',{type:'bar',data:{labels:['Group','R32','R16','QF','SF','3rd','Final'],datasets:[{label:'Yellow',data:[2806,907,671,495,250,97,120],backgroundColor:G.yellow,borderRadius:2,borderSkipped:false},{label:'Red',data:[158,50,32,30,15,11,10],backgroundColor:'rgba(255,71,71,.75)',borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:barSc()}});}
+  if(id==='ratings'){
+    mkChart('ageChart',{type:'line',data:{labels:[17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36],datasets:[{data:[3.50,3.94,3.65,3.78,3.83,3.69,3.72,3.65,3.68,3.77,3.64,3.52,3.64,3.77,3.34,3.50,3.27,3.50,3.41,2.88],borderColor:G.accent,backgroundColor:'rgba(212,255,0,.04)',borderWidth:1.5,fill:true,tension:.4,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:G.accent}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.raw.toFixed(2)+' avg rating';}}}},scales:lineSc(2.5,4.3)}});
+    // Scatter: rating vs market value
+    mkChart('scatterChart',{type:'scatter',data:{datasets:[
+      {label:'Forward',data:[{x:13.5,y:8.4},{x:8.0,y:7.8},{x:6.5,y:7.5},{x:20.0,y:8.1},{x:4.5,y:7.2},{x:50.0,y:8.0},{x:100.0,y:7.9},{x:15.0,y:7.6}],backgroundColor:G.accent,pointRadius:5},
+      {label:'Midfielder',data:[{x:11.4,y:8.4},{x:7.0,y:7.6},{x:5.2,y:7.3},{x:18.0,y:8.0},{x:3.8,y:7.0},{x:40.0,y:7.8},{x:80.0,y:7.7},{x:12.0,y:7.4}],backgroundColor:'rgba(91,156,246,.8)',pointRadius:5},
+      {label:'Defender',data:[{x:8.0,y:8.8},{x:5.0,y:7.5},{x:3.5,y:7.2},{x:12.0,y:7.9},{x:2.5,y:6.8},{x:30.0,y:7.6},{x:60.0,y:7.4},{x:9.0,y:7.3}],backgroundColor:'rgba(61,220,132,.8)',pointRadius:5}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:function(){return '';},label:function(c){return ' €'+c.parsed.x+'M · Rating '+c.parsed.y;}}}},scales:{x:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub,callback:function(v){return '€'+v+'M'}},title:{display:true,text:'Market value',color:G.sub,font:{size:9}}},y:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub},min:6.5,max:9.2,title:{display:true,text:'Rating',color:G.sub,font:{size:9}}}}}});
+    mkChart('clutchChart',{type:'radar',data:{labels:['Clutch','Creativity','Pressure','Rating','Mkt val'],datasets:[{label:'Aymen Attwan',data:[90,43.9,40.3,70,50],borderColor:G.accent,backgroundColor:'rgba(212,255,0,.06)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.accent},{label:'Mostafa Hegazi',data:[88.4,82.5,67.7,78,65],borderColor:G.blue,backgroundColor:'rgba(91,156,246,.06)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.blue}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{grid:{color:'#1e1e1e'},ticks:{display:false},pointLabels:{color:G.sub,font:{size:10}},angleLines:{color:'#181818'},min:0,max:100}}}});
+  }
+  if(id==='physical'){
+    mkChart('physRadar',{type:'radar',data:{labels:['Distance','Speed','Sprint','Stamina'],datasets:[{label:'Fwd',data:[91.6,100,92.3,100],borderColor:G.accent,backgroundColor:'rgba(212,255,0,.05)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.accent},{label:'Mid',data:[100,100,100,100],borderColor:G.blue,backgroundColor:'rgba(91,156,246,.05)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.blue},{label:'Def',data:[88.7,99.4,88.5,99.8],borderColor:G.green,backgroundColor:'rgba(61,220,132,.05)',borderWidth:1.5,pointRadius:3,pointBackgroundColor:G.green},{label:'GK',data:[53.6,48.7,53.8,95.6],borderColor:G.dim,backgroundColor:'rgba(46,46,46,.05)',borderWidth:1,pointRadius:3,pointBackgroundColor:G.dim}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{grid:{color:'#1e1e1e'},ticks:{display:false},pointLabels:{color:G.sub,font:{size:11}},angleLines:{color:'#181818'},min:0,max:110}}}});
+    mkChart('physGrouped',{type:'bar',data:{labels:['Forward','Midfielder','Defender','Goalkeeper'],datasets:[{label:'Distance',data:[4.12,4.50,3.99,2.41],backgroundColor:G.accent,borderRadius:2,borderSkipped:false},{label:'Sprint',data:[0.48,0.52,0.46,0.28],backgroundColor:'rgba(91,156,246,.7)',borderRadius:2,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:G.sub}},y:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub},beginAtZero:true,title:{display:true,text:'km per match',color:G.sub,font:{size:9}}}}}});
+  }
+  if(id==='shots'){setTimeout(drawPitch,50);}
+  if(id==='heatmap'){buildHeatmaps();}
+  if(id==='stages'){
+    mkChart('stagesLineChart',{type:'line',data:{labels:['Group','R32','R16','QF','SF','3rd','Final'],datasets:[{label:'Total goals',data:[1630,532,364,245,134,57,62],borderColor:G.accent,backgroundColor:'rgba(212,255,0,.05)',borderWidth:1.5,fill:true,tension:.3,pointRadius:4,pointBackgroundColor:G.accent,yAxisID:'y'},{label:'Goals/match',data:[2.82,2.99,2.89,2.92,3.19,2.71,2.95],borderColor:G.blue,backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],tension:.3,pointRadius:4,pointBackgroundColor:G.blue,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:G.grid},border:{display:false},ticks:{color:G.sub},position:'left',beginAtZero:true},y2:{grid:{display:false},border:{display:false},ticks:{color:G.blue},position:'right',min:2.5,max:3.5}}}});
+  }
+}
+
+buildBarcode();
+document.querySelectorAll('[data-target]').forEach(animateCounter);
+initCharts('overview');
+</script>
+</body>
+</html>
